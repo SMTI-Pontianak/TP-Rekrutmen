@@ -12,12 +12,21 @@ $success = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $title = $conn->real_escape_string($_POST['title']);
-    $company_name = $conn->real_escape_string($_POST['company_name']);
+    
+    // Auto assign company name if recruiter
+    if ($_SESSION['role'] === 'recruiter') {
+        $company_name = $conn->real_escape_string($_SESSION['company_name']);
+    } else {
+        $company_name = $conn->real_escape_string($_POST['company_name']);
+    }
+
     $description = $conn->real_escape_string($_POST['description']);
     $requirements = $conn->real_escape_string($_POST['requirements']);
 
-    $sql = "INSERT INTO jobs (title, company_name, description, requirements) 
-            VALUES ('$title', '$company_name', '$description', '$requirements')";
+    $user_id = $_SESSION['user_id'];
+
+    $sql = "INSERT INTO jobs (user_id, title, company_name, description, requirements) 
+            VALUES ('$user_id', '$title', '$company_name', '$description', '$requirements')";
     
     if ($conn->query($sql) === TRUE) {
         $success = "Lowongan berhasil ditambahkan!";
@@ -89,6 +98,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <ul class="sidebar-menu">
                 <li><a href="admin_dashboard.php"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
                 <li><a href="add_job.php" class="active"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
+                <?php if($_SESSION['role'] === 'teacher'): ?>
+                <li><a href="manage_companies.php"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <?php endif; ?>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>
         </aside>
@@ -114,7 +126,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                         <div class="form-group">
                             <label class="form-label" for="company_name">Nama Perusahaan</label>
-                            <input type="text" id="company_name" name="company_name" class="form-control" required placeholder="Contoh: PT. Astra Honda Motor">
+                            <?php if($_SESSION['role'] === 'recruiter'): ?>
+                                <input type="text" id="company_name" name="company_name" class="form-control" value="<?php echo htmlspecialchars($_SESSION['company_name']); ?>" readonly style="background: var(--bg-main); color: var(--text-muted); cursor: not-allowed;">
+                            <?php else: ?>
+                                <input type="text" id="company_name" name="company_name" class="form-control" required placeholder="Contoh: PT. Astra Honda Motor">
+                            <?php endif; ?>
                         </div>
                     </div>
 

@@ -11,20 +11,32 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_job_id'])) {
     $delete_job_id = (int)$_POST['delete_job_id'];
     
-    // First, delete all physical CV files associated with this job
-    $apps_sql = "SELECT cv_file FROM applications WHERE job_id = $delete_job_id";
-    $apps_res = $conn->query($apps_sql);
-    if ($apps_res->num_rows > 0) {
-        while ($app = $apps_res->fetch_assoc()) {
-            $file_path = "uploads/" . $app['cv_file'];
-            if (file_exists($file_path)) {
-                unlink($file_path);
-            }
+    // Check ownership first if user is recruiter
+    $can_delete = true;
+    if ($_SESSION['role'] === 'recruiter') {
+        $check_sql = "SELECT id FROM jobs WHERE id = $delete_job_id AND user_id = {$_SESSION['user_id']}";
+        $check_res = $conn->query($check_sql);
+        if ($check_res->num_rows == 0) {
+            $can_delete = false;
         }
     }
     
-    // Delete the job (DB will cascade delete the application rows)
-    $conn->query("DELETE FROM jobs WHERE id = $delete_job_id");
+    if ($can_delete) {
+        // First, delete all physical CV files associated with this job
+        $apps_sql = "SELECT cv_file FROM applications WHERE job_id = $delete_job_id";
+        $apps_res = $conn->query($apps_sql);
+        if ($apps_res->num_rows > 0) {
+            while ($app = $apps_res->fetch_assoc()) {
+                $file_path = "uploads/" . $app['cv_file'];
+                if (file_exists($file_path)) {
+                    unlink($file_path);
+                }
+            }
+        }
+        
+        // Delete the job (DB will cascade delete the application rows)
+        $conn->query("DELETE FROM jobs WHERE id = $delete_job_id");
+    }
     
     // Redirect to refresh
     header("Location: admin_dashboard.php");
@@ -32,15 +44,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_job_id'])) {
 }
 
 // Fetch stats
-$jobs_count = $conn->query("SELECT COUNT(*) as count FROM jobs")->fetch_assoc()['count'];
-$apps_count = $conn->query("SELECT COUNT(*) as count FROM applications")->fetch_assoc()['count'];
+$where_clause = "";
+if ($_SESSION['role'] === 'recruiter') {
+    $where_clause = "WHERE user_id = {$_SESSION['user_id']}";
+}
+
+$jobs_count_sql = "SELECT COUNT(*) as count FROM jobs $where_clause";
+$jobs_count = $conn->query($jobs_count_sql)->fetch_assoc()['count'];
+
+if ($_SESSION['role'] === 'recruiter') {
+    $apps_count_sql = "SELECT COUNT(*) as count FROM applications a JOIN jobs j ON a.job_id = j.id WHERE j.user_id = {$_SESSION['user_id']}";
+} else {
+    $apps_count_sql = "SELECT COUNT(*) as count FROM applications";
+}
+$apps_count = $conn->query($apps_count_sql)->fetch_assoc()['count'];
 
 // Fetch jobs with application count
 $sql = "SELECT j.*, COUNT(a.id) as app_count 
         FROM jobs j 
-        LEFT JOIN applications a ON j.id = a.job_id 
-        GROUP BY j.id 
-        ORDER BY j.created_at DESC";
+        LEFT JOIN applications a ON j.id = a.job_id ";
+if ($_SESSION['role'] === 'recruiter') {
+    $sql .= " WHERE j.user_id = {$_SESSION['user_id']} ";
+}
+$sql .= " GROUP BY j.id ORDER BY j.created_at DESC";
 $result = $conn->query($sql);
 ?>
 <!DOCTYPE html>
@@ -140,6 +166,9 @@ $result = $conn->query($sql);
             <ul class="sidebar-menu">
                 <li><a href="admin_dashboard.php" class="active"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
                 <li><a href="add_job.php"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
+                <?php if($_SESSION['role'] === 'teacher'): ?>
+                <li><a href="manage_companies.php"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <?php endif; ?>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>
         </aside>

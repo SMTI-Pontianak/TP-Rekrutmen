@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $conn->real_escape_string($_POST['username']);
     $password = $_POST['password'];
 
-    $sql = "SELECT id, username, password, role FROM users WHERE username = '$username'";
+    $sql = "SELECT id, username, password, role, company_name FROM users WHERE username = '$username'";
     $result = $conn->query($sql);
 
     if ($result->num_rows == 1) {
@@ -22,6 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['user_id'] = $row['id'];
             $_SESSION['username'] = $row['username'];
             $_SESSION['role'] = $row['role'];
+            $_SESSION['company_name'] = $row['company_name'];
             header("Location: admin_dashboard.php");
             exit;
         } else {
@@ -37,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Guru - TP Rekrutmen</title>
+    <title>Login - TP Rekrutmen</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -72,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="login-card">
         <div class="login-header">
             <i class="fa-solid fa-chalkboard-user"></i>
-            <h1 style="font-size: 1.75rem; color: var(--dark);">Login Guru / Admin</h1>
+            <h1 style="font-size: 1.75rem; color: var(--dark);">Login Admin / Recruiter</h1>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">Masuk ke sistem pengelolaan rekrutmen</p>
         </div>
 
@@ -101,7 +102,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 Login
             </button>
 
-            <div style="text-align: center; margin-top: 24px;">
+            <div style="text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted);">
+                Belum mendaftarkan Perusahaan Anda? <a href="register.php" style="font-weight: 600;">Daftar di sini</a>
+            </div>
+
+            <div style="text-align: center; margin-top: 16px;">
                 <a href="index.php" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
             </div>
         </form>

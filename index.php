@@ -26,7 +26,7 @@ $result = $conn->query($sql);
             </a>
             <div class="nav-links">
                 <a href="index.php" class="nav-link">Lowongan</a>
-                <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-chalkboard-user"></i> Login Guru</a>
+                <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-user-lock"></i> Login</a>
             </div>
         </div>
     </nav>

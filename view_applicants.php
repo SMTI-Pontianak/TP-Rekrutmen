@@ -38,13 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 }
 
 // Get Job Info
-$job_sql = "SELECT title, company_name FROM jobs WHERE id = $job_id";
+$job_sql = "SELECT title, company_name, user_id FROM jobs WHERE id = $job_id";
 $job_result = $conn->query($job_sql);
 if($job_result->num_rows == 0) {
     header("Location: admin_dashboard.php");
     exit;
 }
 $job = $job_result->fetch_assoc();
+
+// Check if recruiter owns this job
+if ($_SESSION['role'] === 'recruiter' && $job['user_id'] != $_SESSION['user_id']) {
+    header("Location: admin_dashboard.php");
+    exit;
+}
 
 // Get Applicants
 $sql = "SELECT * FROM applications WHERE job_id = $job_id ORDER BY applied_at DESC";
@@ -111,8 +117,11 @@ $result = $conn->query($sql);
     <div class="container dashboard-grid" style="margin-bottom: 5rem;">
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li><a href="admin_dashboard.php" class="active"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
+                <li><a href="admin_dashboard.php"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
                 <li><a href="add_job.php"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
+                <?php if($_SESSION['role'] === 'teacher'): ?>
+                <li><a href="manage_companies.php"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <?php endif; ?>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>
         </aside>

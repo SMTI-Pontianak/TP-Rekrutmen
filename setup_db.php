@@ -12,14 +12,14 @@ if ($conn->connect_error) {
 }
 
 // Create database
-$sql = "CREATE DATABASE IF NOT EXISTS tp_rekrutmen";
+$sql = "CREATE DATABASE IF NOT EXISTS tp_rekrutmen_db";
 if ($conn->query($sql) === TRUE) {
     echo "Database created successfully<br>";
 } else {
     echo "Error creating database: " . $conn->error . "<br>";
 }
 
-$conn->select_db("tp_rekrutmen");
+$conn->select_db("tp_rekrutmen_db");
 
 // sql to create tables
 $jobs_table = "CREATE TABLE IF NOT EXISTS jobs (
@@ -72,6 +72,14 @@ if ($conn->query($users_table) === TRUE) {
         $hashed_password = password_hash('admin123', PASSWORD_DEFAULT);
         $conn->query("INSERT INTO users (username, password, role) VALUES ('admin', '$hashed_password', 'teacher')");
         echo "Default admin user created (admin / admin123)<br>";
+    }
+
+    // Insert default recruiter user if not exists
+    $check_recruiter = $conn->query("SELECT * FROM users WHERE username = 'recruiter'");
+    if($check_recruiter->num_rows == 0) {
+        $hashed_password = password_hash('recruiter123', PASSWORD_DEFAULT);
+        $conn->query("INSERT INTO users (username, password, role) VALUES ('recruiter', '$hashed_password', 'recruiter')");
+        echo "Default recruiter user created (recruiter / recruiter123)<br>";
     }
 } else {
     echo "Error creating table: " . $conn->error . "<br>";
