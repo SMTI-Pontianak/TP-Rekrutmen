@@ -1,6 +1,11 @@
 <?php
 require_once 'config.php';
 
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Fetch jobs
 $sql = "SELECT * FROM jobs ORDER BY created_at DESC";
 $result = $conn->query($sql);
@@ -26,7 +31,18 @@ $result = $conn->query($sql);
             </a>
             <div class="nav-links">
                 <a href="index.php" class="nav-link">Lowongan</a>
-                <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-user-lock"></i> Login</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <?php if ($_SESSION['role'] === 'siswa'): ?>
+                        <a href="siswa_dashboard.php" class="nav-link"><i class="fa-solid fa-user-graduate"></i> Dashboard</a>
+                        <a href="logout.php" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.95rem;">Logout</a>
+                    <?php else: ?>
+                        <a href="admin_dashboard.php" class="nav-link"><i class="fa-solid fa-chart-line"></i> Admin</a>
+                        <a href="logout.php" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.95rem;">Logout</a>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-user-lock"></i> Login Admin</a>
+                    <a href="siswa_register.php" class="btn btn-primary"><i class="fa-solid fa-user-graduate"></i> Daftar Siswa</a>
+                <?php endif; ?>
             </div>
         </div>
     </nav>

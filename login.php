@@ -23,7 +23,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['username'] = $row['username'];
             $_SESSION['role'] = $row['role'];
             $_SESSION['company_name'] = $row['company_name'];
-            header("Location: admin_dashboard.php");
+            
+            // Redirect based on role
+            if ($row['role'] === 'siswa') {
+                header("Location: siswa_dashboard.php");
+            } else {
+                header("Location: admin_dashboard.php");
+            }
             exit;
         } else {
             $error = "Password salah!";

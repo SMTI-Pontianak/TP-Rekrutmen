@@ -82,6 +82,14 @@ if ($conn->query($users_table) === TRUE) {
         $conn->query("INSERT INTO users (username, password, role) VALUES ('recruiter', '$hashed_password', 'recruiter')");
         echo "Default recruiter user created (recruiter / recruiter123)<br>";
     }
+
+    // Insert default siswa user if not exists
+    $check_siswa = $conn->query("SELECT * FROM users WHERE username = 'siswa'");
+    if($check_siswa->num_rows == 0) {
+        $hashed_password = password_hash('siswa123', PASSWORD_DEFAULT);
+        $conn->query("INSERT INTO users (username, password, role) VALUES ('siswa', '$hashed_password', 'siswa')");
+        echo "Default siswa user created (siswa / siswa123)<br>";
+    }
 } else {
     echo "Error creating table: " . $conn->error . "<br>";
 }
