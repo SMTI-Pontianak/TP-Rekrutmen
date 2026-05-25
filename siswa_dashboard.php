@@ -7,8 +7,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'siswa') {
     exit;
 }
 
-// Fetch all available jobs
-$jobs_sql = "SELECT * FROM jobs ORDER BY created_at DESC";
+// Fetch siswa's konsentrasi keahlian
+$siswa_sql = "SELECT konsentrasi_keahlian FROM users WHERE id = {$_SESSION['user_id']}";
+$siswa_result = $conn->query($siswa_sql);
+$siswa_data = $siswa_result->fetch_assoc();
+$siswa_konsentrasi = $siswa_data['konsentrasi_keahlian'];
+
+// Fetch jobs matching siswa's konsentrasi keahlian
+$jobs_sql = "SELECT * FROM jobs WHERE konsentrasi_keahlian = '$siswa_konsentrasi' ORDER BY created_at DESC";
 $jobs_result = $conn->query($jobs_sql);
 
 // Fetch applications made by this siswa
@@ -142,7 +148,8 @@ $apps_result = $conn->query($apps_sql);
         <!-- Welcome Section -->
         <div style="background: linear-gradient(135deg, var(--primary), var(--primary-hover)); border-radius: var(--radius-lg); padding: 2rem; color: white; margin-bottom: 2rem;">
             <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Selamat Datang, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
-            <p style="font-size: 1.1rem;">Cari dan lamar lowongan kerja dari perusahaan terkemuka</p>
+            <p style="font-size: 1.1rem;">Konsentrasi: <strong><?php echo htmlspecialchars($siswa_konsentrasi); ?></strong></p>
+            <p style="font-size: 0.95rem; margin-top: 0.5rem;">Cari dan lamar lowongan kerja dari perusahaan terkemuka yang sesuai dengan konsentrasi Anda</p>
         </div>
 
         <div class="dashboard-container">

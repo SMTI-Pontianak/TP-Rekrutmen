@@ -12,6 +12,7 @@ $success = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $title = $conn->real_escape_string($_POST['title']);
+    $konsentrasi_keahlian = $_POST['konsentrasi_keahlian'];
     
     // Auto assign company name if recruiter
     if ($_SESSION['role'] === 'recruiter') {
@@ -25,8 +26,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $user_id = $_SESSION['user_id'];
 
-    $sql = "INSERT INTO jobs (user_id, title, company_name, description, requirements) 
-            VALUES ('$user_id', '$title', '$company_name', '$description', '$requirements')";
+    $sql = "INSERT INTO jobs (user_id, title, company_name, konsentrasi_keahlian, description, requirements) 
+            VALUES ('$user_id', '$title', '$company_name', '$konsentrasi_keahlian', '$description', '$requirements')";
     
     if ($conn->query($sql) === TRUE) {
         $success = "Lowongan berhasil ditambahkan!";
@@ -131,6 +132,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <?php else: ?>
                                 <input type="text" id="company_name" name="company_name" class="form-control" required placeholder="Contoh: PT. Astra Honda Motor">
                             <?php endif; ?>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="konsentrasi_keahlian">Konsentrasi Keahlian</label>
+                            <select id="konsentrasi_keahlian" name="konsentrasi_keahlian" class="form-control" required>
+                                <option value="">Pilih Konsentrasi Keahlian</option>
+                                <option value="Teknik Kimia Industri">Teknik Kimia Industri</option>
+                                <option value="Teknik Pemesinan">Teknik Pemesinan</option>
+                                <option value="Analisis Pengujian Laboratorium">Analisis Pengujian Laboratorium</option>
+                                <option value="Teknik Otomasi Industri">Teknik Otomasi Industri</option>
+                            </select>
                         </div>
                     </div>
 

@@ -14,9 +14,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $conn->real_escape_string($_POST['username']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $konsentrasi_keahlian = $_POST['konsentrasi_keahlian'];
 
     // Validations
-    if (empty($username) || empty($password) || empty($confirm_password)) {
+    if (empty($username) || empty($password) || empty($confirm_password) || empty($konsentrasi_keahlian)) {
         $error = "Semua field harus diisi!";
     } else if ($password !== $confirm_password) {
         $error = "Password tidak cocok!";
@@ -31,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             // Insert
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $insert_sql = "INSERT INTO users (username, password, role) VALUES ('$username', '$hashed_password', 'siswa')";
+            $insert_sql = "INSERT INTO users (username, password, role, konsentrasi_keahlian) VALUES ('$username', '$hashed_password', 'siswa', '$konsentrasi_keahlian')";
             
             if ($conn->query($insert_sql) === TRUE) {
                 $success = "Pendaftaran berhasil! Anda sekarang bisa login.";
@@ -120,6 +121,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div style="position: relative;">
                         <i class="fa-solid fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
                         <input type="password" id="confirm_password" name="confirm_password" class="form-control" style="padding-left: 48px;" required placeholder="Konfirmasi password Anda">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="konsentrasi_keahlian">Konsentrasi Keahlian</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-graduation-cap" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                        <select id="konsentrasi_keahlian" name="konsentrasi_keahlian" class="form-control" style="padding-left: 48px;" required>
+                            <option value="">Pilih Konsentrasi Keahlian</option>
+                            <option value="Teknik Kimia Industri">Teknik Kimia Industri</option>
+                            <option value="Teknik Pemesinan">Teknik Pemesinan</option>
+                            <option value="Analisis Pengujian Laboratorium">Analisis Pengujian Laboratorium</option>
+                            <option value="Teknik Otomasi Industri">Teknik Otomasi Industri</option>
+                        </select>
                     </div>
                 </div>
 

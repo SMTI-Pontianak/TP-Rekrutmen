@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+session_start();
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     header("Location: index.php");
@@ -16,6 +17,19 @@ if ($result->num_rows == 0) {
 }
 
 $job = $result->fetch_assoc();
+
+// Check if siswa's konsentrasi matches job's konsentrasi
+if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'siswa') {
+    $siswa_sql = "SELECT konsentrasi_keahlian FROM users WHERE id = {$_SESSION['user_id']}";
+    $siswa_result = $conn->query($siswa_sql);
+    $siswa_data = $siswa_result->fetch_assoc();
+    
+    if ($siswa_data['konsentrasi_keahlian'] !== $job['konsentrasi_keahlian']) {
+        header("Location: index.php");
+        exit;
+    }
+}
+
 $error = '';
 $success = '';
 
