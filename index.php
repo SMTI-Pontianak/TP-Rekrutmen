@@ -40,7 +40,7 @@ $result = $conn->query($sql);
                         <a href="logout.php" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.95rem;">Logout</a>
                     <?php endif; ?>
                 <?php else: ?>
-                    <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-user-lock"></i> Login Admin</a>
+                    <a href="login.php" class="btn btn-outline"><i class="fa-solid fa-user-lock"></i> Login</a>
                     <a href="siswa_register.php" class="btn btn-primary"><i class="fa-solid fa-user-graduate"></i> Daftar Siswa</a>
                 <?php endif; ?>
             </div>
