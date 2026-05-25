@@ -33,7 +33,7 @@ $job = $result->fetch_assoc();
         <div class="container nav-container">
             <a href="index.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span>
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <a href="index.php" class="nav-link">Kembali ke Lowongan</a>

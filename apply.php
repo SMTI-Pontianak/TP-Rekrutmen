@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="container nav-container">
             <a href="index.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span>
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <a href="job_details.php?id=<?php echo $job['id']; ?>" class="nav-link">Batal / Kembali</a>

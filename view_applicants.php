@@ -105,7 +105,7 @@ $result = $conn->query($sql);
         <div class="container nav-container">
             <a href="admin_dashboard.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span> - Admin
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <span style="font-weight: 600; color: var(--dark); margin-right: 16px;">Halo, <?php echo htmlspecialchars($_SESSION['username']); ?></span>

@@ -23,7 +23,7 @@ $apps_result = $conn->query($apps_sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Siswa - TP Rekrutmen</title>
+    <title>Dashboard Siswa - Bursa Kerja Khusus SMTI Pontianak</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -123,7 +123,7 @@ $apps_result = $conn->query($apps_sql);
         <div class="container nav-container">
             <a href="siswa_dashboard.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span>
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <span style="color: var(--text-main); margin-right: 1.5rem;">

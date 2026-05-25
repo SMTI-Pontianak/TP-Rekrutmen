@@ -15,7 +15,7 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bursa Kerja Khusus (BKK) - TP Rekrutmen</title>
+    <title>Bursa Kerja Khusus SMTI Pontianak</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Include FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,7 +27,7 @@ $result = $conn->query($sql);
         <div class="container nav-container">
             <a href="index.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span>
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <a href="index.php" class="nav-link">Lowongan</a>

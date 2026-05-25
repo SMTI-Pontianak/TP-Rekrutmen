@@ -74,7 +74,7 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Guru - TP Rekrutmen</title>
+    <title>Dashboard - Bursa Kerja Khusus SMTI Pontianak</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -152,7 +152,7 @@ $result = $conn->query($sql);
         <div class="container nav-container">
             <a href="admin_dashboard.php" class="nav-brand">
                 <i class="fa-solid fa-briefcase"></i>
-                TP<span>Rekrutmen</span> - Admin
+                Bursa Kerja Khusus SMTI Pontianak
             </a>
             <div class="nav-links">
                 <span style="font-weight: 600; color: var(--dark); margin-right: 16px;">Halo, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
