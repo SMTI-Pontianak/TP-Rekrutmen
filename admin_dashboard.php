@@ -168,6 +168,7 @@ $result = $conn->query($sql);
                 <li><a href="add_job.php"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
                 <?php if($_SESSION['role'] === 'teacher'): ?>
                 <li><a href="manage_companies.php"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <li><a href="manage_siswa.php"><i class="fa-solid fa-user-graduate"></i> Kelola Siswa</a></li>
                 <?php endif; ?>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>

@@ -146,6 +146,7 @@ $users_result = $conn->query($users_sql);
                 <li><a href="admin_dashboard.php"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
                 <li><a href="add_job.php"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
                 <li><a href="manage_companies.php" class="active"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <li><a href="manage_siswa.php"><i class="fa-solid fa-user-graduate"></i> Kelola Siswa</a></li>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>
         </aside>
