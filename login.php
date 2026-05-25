@@ -145,17 +145,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     Siswa
                 </button>
             </div>
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="index.php" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+            </div>
         </div>
 
         <!-- Login Form Step -->
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" id="loginForm">
             <div id="formSection" class="form-section <?php echo !empty($selected_role) ? 'show' : ''; ?>">
                 <input type="hidden" name="role" id="selectedRole" value="<?php echo htmlspecialchars($selected_role); ?>">
-                
-                <!-- Back Button -->
-                <button type="button" onclick="backToRoleSelection()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-bottom: 16px; font-weight: 500;">
-                    <i class="fa-solid fa-arrow-left"></i> Pilih Role Lain
-                </button>
 
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
