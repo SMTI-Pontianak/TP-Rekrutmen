@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'security_helper.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -13,6 +14,24 @@ if (!isset($_GET['job_id']) || empty($_GET['job_id'])) {
 }
 
 $job_id = (int)$_GET['job_id'];
+
+// Handle Status Update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    $application_id = (int)$_POST['application_id'];
+    $new_status = $conn->real_escape_string($_POST['new_status']);
+    
+    // Validate status value
+    $valid_statuses = ['pending', 'reviewed', 'accepted', 'rejected'];
+    if (in_array($new_status, $valid_statuses)) {
+        $update_sql = "UPDATE applications SET status = '$new_status', updated_at = NOW() WHERE id = $application_id AND job_id = $job_id";
+        if ($conn->query($update_sql) === TRUE) {
+            logSecurityEvent('APPLICATION_STATUS_UPDATED', ['application_id' => $application_id, 'new_status' => $new_status, 'user_id' => $_SESSION['user_id']]);
+        }
+    }
+    
+    header("Location: view_applicants.php?job_id=" . $job_id);
+    exit;
+}
 
 // Handle Deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
@@ -55,6 +74,19 @@ if ($_SESSION['role'] === 'recruiter' && $job['user_id'] != $_SESSION['user_id']
 // Get Applicants
 $sql = "SELECT * FROM applications WHERE job_id = $job_id ORDER BY applied_at DESC";
 $result = $conn->query($sql);
+
+// Function to get status badge
+function getStatusBadge($status) {
+    $badges = [
+        'pending' => ['color' => '#F59E0B', 'bg' => '#FEF3C7', 'label' => 'PENDING', 'icon' => 'fa-clock'],
+        'reviewed' => ['color' => '#3B82F6', 'bg' => '#DBEAFE', 'label' => 'REVIEWED', 'icon' => 'fa-eye'],
+        'accepted' => ['color' => '#10B981', 'bg' => '#D1FAE5', 'label' => 'ACCEPTED', 'icon' => 'fa-check'],
+        'rejected' => ['color' => '#EF4444', 'bg' => '#FEE2E2', 'label' => 'REJECTED', 'icon' => 'fa-times']
+    ];
+    
+    $badge = $badges[$status] ?? $badges['pending'];
+    return $badge;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -97,6 +129,95 @@ $result = $conn->query($sql);
             background: var(--primary-light);
             color: var(--primary);
         }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--bg-surface);
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-header {
+            margin-bottom: 24px;
+        }
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0 0 8px 0;
+        }
+        .modal-header p {
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-main);
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
     </style>
 </head>
 <body>
@@ -121,6 +242,7 @@ $result = $conn->query($sql);
                 <li><a href="add_job.php"><i class="fa-solid fa-plus"></i> Tambah Lowongan</a></li>
                 <?php if($_SESSION['role'] === 'teacher'): ?>
                 <li><a href="manage_companies.php"><i class="fa-solid fa-building-user"></i> Kelola Perusahaan</a></li>
+                <li><a href="manage_siswa.php"><i class="fa-solid fa-users"></i> Kelola Siswa</a></li>
                 <?php endif; ?>
                 <li><a href="index.php" target="_blank"><i class="fa-solid fa-globe"></i> Lihat Portal</a></li>
             </ul>
@@ -144,6 +266,7 @@ $result = $conn->query($sql);
                                 <th>Jurusan</th>
                                 <th>Kelas</th>
                                 <th>No. WhatsApp</th>
+                                <th>Status</th>
                                 <th>Waktu Melamar</th>
                                 <th>Aksi</th>
                             </tr>
@@ -151,6 +274,7 @@ $result = $conn->query($sql);
                         <tbody>
                             <?php if ($result->num_rows > 0): ?>
                                 <?php while($row = $result->fetch_assoc()): ?>
+                                    <?php $badge = getStatusBadge($row['status']); ?>
                                     <tr>
                                         <td style="font-weight: 500; color: var(--dark);"><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
                                         <td><?php echo htmlspecialchars($row['jurusan']); ?></td>
@@ -164,17 +288,26 @@ $result = $conn->query($sql);
                                                 <i class="fa-brands fa-whatsapp"></i> <?php echo htmlspecialchars($row['nomor_wa']); ?>
                                             </a>
                                         </td>
+                                        <td>
+                                            <span class="status-badge" style="background: <?php echo $badge['bg']; ?>; color: <?php echo $badge['color']; ?>;">
+                                                <i class="fa-solid <?php echo $badge['icon']; ?>"></i>
+                                                <?php echo $badge['label']; ?>
+                                            </span>
+                                        </td>
                                         <td style="font-size: 0.85rem; color: var(--text-muted);">
                                             <?php echo date('d M Y, H:i', strtotime($row['applied_at'])); ?>
                                         </td>
                                         <td>
                                             <div style="display: flex; gap: 8px;">
                                                 <a href="uploads/<?php echo htmlspecialchars($row['cv_file']); ?>" target="_blank" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: var(--primary);">
-                                                    <i class="fa-solid fa-file-pdf"></i> Lihat CV
+                                                    <i class="fa-solid fa-file-pdf"></i>
                                                 </a>
+                                                <button type="button" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #3B82F6;" onclick="openStatusModal(<?php echo $row['id']; ?>, '<?php echo $row['status']; ?>', '<?php echo htmlspecialchars($row['nama_lengkap']); ?>')">
+                                                    <i class="fa-solid fa-edit"></i>
+                                                </button>
                                                 <form action="view_applicants.php?job_id=<?php echo $job_id; ?>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pelamar ini? CV dan datanya akan dihapus permanen.');" style="margin: 0;">
                                                     <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
-                                                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; cursor: pointer;" title="Hapus Pelamar">
+                                                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; cursor: pointer; background: #EF4444; color: white;" title="Hapus Pelamar">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -184,7 +317,7 @@ $result = $conn->query($sql);
                                 <?php endwhile; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
                                         <i class="fa-solid fa-users" style="font-size: 2rem; margin-bottom: 12px; display: block; color: var(--border);"></i>
                                         Belum ada yang melamar untuk posisi ini.
                                     </td>
@@ -196,6 +329,52 @@ $result = $conn->query($sql);
             </div>
         </main>
     </div>
+
+    <!-- Status Update Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ubah Status Lamaran</h2>
+                <p id="applicantName"></p>
+            </div>
+            <form method="POST" action="view_applicants.php?job_id=<?php echo $job_id; ?>">
+                <input type="hidden" name="application_id" id="applicationId">
+                <div class="form-group">
+                    <label class="form-label">Status Baru</label>
+                    <select name="new_status" id="newStatus" class="form-control" required>
+                        <option value="pending">🕐 Pending - Menunggu Review</option>
+                        <option value="reviewed">👁️ Reviewed - Sudah Dilihat</option>
+                        <option value="accepted">✅ Accepted - Diterima</option>
+                        <option value="rejected">❌ Rejected - Ditolak</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary" name="update_status">Perbarui Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openStatusModal(applicationId, currentStatus, applicantName) {
+            document.getElementById('applicationId').value = applicationId;
+            document.getElementById('newStatus').value = currentStatus;
+            document.getElementById('applicantName').textContent = applicantName;
+            document.getElementById('statusModal').classList.add('active');
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').classList.remove('active');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('statusModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        }
+    </script>
 
 </body>
 </html>

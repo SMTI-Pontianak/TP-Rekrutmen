@@ -1,13 +1,6 @@
 <?php
 require_once 'config.php';
-require_once 'security_helper.php';
 session_start();
-
-// Check if student is logged in
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'siswa') {
-    header("Location: login.php");
-    exit;
-}
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     header("Location: index.php");
@@ -15,9 +8,6 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 }
 
 $job_id = (int)$_GET['id'];
-$siswa_id = $_SESSION['user_id'];
-
-// Check if job exists
 $sql = "SELECT * FROM jobs WHERE id = $job_id";
 $result = $conn->query($sql);
 
@@ -29,75 +19,55 @@ if ($result->num_rows == 0) {
 $job = $result->fetch_assoc();
 
 // Check if siswa's konsentrasi matches job's konsentrasi
-$siswa_sql = "SELECT konsentrasi_keahlian FROM users WHERE id = {$siswa_id}";
-$siswa_result = $conn->query($siswa_sql);
-$siswa_data = $siswa_result->fetch_assoc();
-
-if ($siswa_data['konsentrasi_keahlian'] !== $job['konsentrasi_keahlian']) {
-    header("Location: index.php");
-    exit;
+if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'siswa') {
+    $siswa_sql = "SELECT konsentrasi_keahlian FROM users WHERE id = {$_SESSION['user_id']}";
+    $siswa_result = $conn->query($siswa_sql);
+    $siswa_data = $siswa_result->fetch_assoc();
+    
+    if ($siswa_data['konsentrasi_keahlian'] !== $job['konsentrasi_keahlian']) {
+        header("Location: index.php");
+        exit;
+    }
 }
-
-// Check if student already applied to this job
-$check_applied_sql = "SELECT id FROM applications WHERE siswa_id = $siswa_id AND job_id = $job_id";
-$check_applied_result = $conn->query($check_applied_sql);
-$already_applied = $check_applied_result->num_rows > 0;
-
-// Count active applications (pending, reviewed, or accepted)
-$count_active_sql = "SELECT COUNT(*) as count FROM applications WHERE siswa_id = $siswa_id AND status IN ('pending', 'reviewed', 'accepted')";
-$count_active_result = $conn->query($count_active_sql);
-$count_active = $count_active_result->fetch_assoc()['count'];
-$max_applications_reached = $count_active >= 5;
 
 $error = '';
 $success = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Check if already applied to this job
-    if ($already_applied) {
-        $error = "Anda sudah melamar posisi ini sebelumnya.";
+    $nama_lengkap = $conn->real_escape_string($_POST['nama_lengkap']);
+    $jurusan = $conn->real_escape_string($_POST['jurusan']);
+    $kelas = $conn->real_escape_string($_POST['kelas']);
+    $nomor_wa = $conn->real_escape_string($_POST['nomor_wa']);
+
+    // Handle File Upload
+    $target_dir = "uploads/";
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0777, true);
     }
-    // Check if reached 5 application limit
-    else if ($max_applications_reached) {
-        $error = "Anda sudah mencapai batas maksimal 5 lamaran aktif. Silahkan tunggu hasil lamaran sebelumnya atau batalkan lamaran yang tidak diperlukan.";
+
+    $fileName = basename($_FILES["cv_file"]["name"]);
+    $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    
+    // Generate a secure, unique filename to avoid overwrites, but keep original name info
+    $newFileName = time() . "_" . preg_replace("/[^a-zA-Z0-9]/", "_", $nama_lengkap) . "." . $fileType;
+    $target_file = $target_dir . $newFileName;
+
+    // Check if file is a PDF
+    if($fileType != "pdf") {
+        $error = "Maaf, hanya file PDF yang diperbolehkan.";
     } else {
-        $nama_lengkap = $conn->real_escape_string($_POST['nama_lengkap']);
-        $jurusan = $conn->real_escape_string($_POST['jurusan']);
-        $kelas = $conn->real_escape_string($_POST['kelas']);
-        $nomor_wa = $conn->real_escape_string($_POST['nomor_wa']);
-
-        // Handle File Upload
-        $target_dir = "uploads/";
-        if (!file_exists($target_dir)) {
-            mkdir($target_dir, 0777, true);
-        }
-
-        $fileName = basename($_FILES["cv_file"]["name"]);
-        $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        
-        // Generate a secure, unique filename to avoid overwrites, but keep original name info
-        $newFileName = time() . "_" . preg_replace("/[^a-zA-Z0-9]/", "_", $nama_lengkap) . "." . $fileType;
-        $target_file = $target_dir . $newFileName;
-
-        // Check if file is a PDF
-        if($fileType != "pdf") {
-            $error = "Maaf, hanya file PDF yang diperbolehkan.";
-        } else {
-            if (move_uploaded_file($_FILES["cv_file"]["tmp_name"], $target_file)) {
-                // Insert into database with siswa_id and default status
-                $insert_sql = "INSERT INTO applications (job_id, siswa_id, nama_lengkap, jurusan, kelas, nomor_wa, cv_file, status) 
-                               VALUES ('$job_id', '$siswa_id', '$nama_lengkap', '$jurusan', '$kelas', '$nomor_wa', '$newFileName', 'pending')";
-                
-                if ($conn->query($insert_sql) === TRUE) {
-                    $success = "Lamaran Anda berhasil dikirim! Status lamaran Anda adalah PENDING. Silahkan tunggu informasi selanjutnya.";
-                    logSecurityEvent('APPLICATION_SUBMITTED', ['siswa_id' => $siswa_id, 'job_id' => $job_id]);
-                    $already_applied = true;
-                } else {
-                    $error = "Error: " . $conn->error;
-                }
+        if (move_uploaded_file($_FILES["cv_file"]["tmp_name"], $target_file)) {
+            // Insert into database
+            $insert_sql = "INSERT INTO applications (job_id, nama_lengkap, jurusan, kelas, nomor_wa, cv_file) 
+                           VALUES ('$job_id', '$nama_lengkap', '$jurusan', '$kelas', '$nomor_wa', '$newFileName')";
+            
+            if ($conn->query($insert_sql) === TRUE) {
+                $success = "Lamaran Anda berhasil dikirim! Silakan tunggu informasi selanjutnya.";
             } else {
-                $error = "Terjadi kesalahan saat mengunggah file Anda.";
+                $error = "Error: " . $conn->error;
             }
+        } else {
+            $error = "Terjadi kesalahan saat mengunggah file Anda.";
         }
     }
 }
@@ -131,19 +101,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <p class="section-subtitle">Posisi: <strong><?php echo htmlspecialchars($job['title']); ?></strong> di <?php echo htmlspecialchars($job['company_name']); ?></p>
         </div>
 
-        <!-- Application Limit Warning -->
-        <?php if(!empty($_SESSION['user_id'])): ?>
-            <div style="background: #f8f9fa; border-left: 4px solid var(--primary); padding: 16px; margin-bottom: 24px; border-radius: 4px;">
-                <p style="margin: 0; font-size: 0.95rem; color: var(--text-main);">
-                    <i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 8px;"></i>
-                    <strong>Batas Lamaran:</strong> <?php echo $count_active; ?>/5 lamaran aktif
-                    <?php if($max_applications_reached): ?>
-                        <span style="color: var(--danger); font-weight: 600;"> ⚠️ Anda telah mencapai batas maksimal</span>
-                    <?php endif; ?>
-                </p>
-            </div>
-        <?php endif; ?>
-
         <div class="form-container">
             <?php if(!empty($error)): ?>
                 <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <?php echo $error; ?></div>
@@ -154,8 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <i class="fa-solid fa-circle-check"></i> <?php echo $success; ?>
                 </div>
                 <div style="text-align: center; margin-top: 24px;">
-                    <a href="siswa_dashboard.php" class="btn btn-primary">Lihat Lamaran Saya</a>
-                    <a href="index.php" class="btn btn-secondary" style="margin-left: 12px;">Kembali ke Beranda</a>
+                    <a href="index.php" class="btn btn-primary">Kembali ke Beranda</a>
                 </div>
             <?php else: ?>
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]) . "?id=" . $job_id; ?>" method="POST" enctype="multipart/form-data">

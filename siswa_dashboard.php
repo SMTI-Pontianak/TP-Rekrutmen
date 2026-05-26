@@ -21,8 +21,14 @@ $jobs_result = $conn->query($jobs_sql);
 $apps_sql = "SELECT a.*, j.title, j.company_name 
              FROM applications a 
              JOIN jobs j ON a.job_id = j.id 
+             WHERE a.siswa_id = {$_SESSION['user_id']}
              ORDER BY a.applied_at DESC";
 $apps_result = $conn->query($apps_sql);
+
+// Count active applications
+$count_active_sql = "SELECT COUNT(*) as count FROM applications WHERE siswa_id = {$_SESSION['user_id']} AND status IN ('pending', 'reviewed', 'accepted')";
+$count_active_result = $conn->query($count_active_sql);
+$count_active = $count_active_result->fetch_assoc()['count'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -105,15 +111,29 @@ $apps_result = $conn->query($apps_sql);
             border-bottom: 1px solid var(--border);
         }
         .status-badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 0.5rem 1rem;
             border-radius: var(--radius-full);
             font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
         }
         .status-pending {
             background: #FEF3C7;
             color: #92400E;
+        }
+        .status-reviewed {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        .status-accepted {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .status-rejected {
+            background: #FEE2E2;
+            color: #7F1D1D;
         }
         .empty-message {
             text-align: center;
@@ -188,6 +208,7 @@ $apps_result = $conn->query($apps_sql);
             <div class="dashboard-card">
                 <h2 class="dashboard-title">
                     <i class="fa-solid fa-file-lines"></i> Lamaran Saya
+                    <span style="margin-left: auto; background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; font-weight: 500;"><?php echo $count_active; ?>/5 Aktif</span>
                 </h2>
                 
                 <?php if ($apps_result->num_rows > 0): ?>
@@ -204,12 +225,22 @@ $apps_result = $conn->query($apps_sql);
                             </thead>
                             <tbody>
                                 <?php while ($app = $apps_result->fetch_assoc()): ?>
+                                    <?php 
+                                    $status_class = 'status-' . $app['status'];
+                                    $status_labels = [
+                                        'pending' => '🕐 Pending',
+                                        'reviewed' => '👁️ Reviewed',
+                                        'accepted' => '✅ Accepted',
+                                        'rejected' => '❌ Rejected'
+                                    ];
+                                    $status_label = $status_labels[$app['status']] ?? 'Unknown';
+                                    ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($app['title']); ?></td>
                                         <td><?php echo htmlspecialchars($app['company_name']); ?></td>
                                         <td><?php echo htmlspecialchars($app['nama_lengkap']); ?></td>
                                         <td><?php echo date('d M Y', strtotime($app['applied_at'])); ?></td>
-                                        <td><span class="status-badge status-pending">Diproses</span></td>
+                                        <td><span class="status-badge <?php echo $status_class; ?>"><?php echo $status_label; ?></span></td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>

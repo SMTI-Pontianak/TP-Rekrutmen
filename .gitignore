@@ -1,0 +1,7 @@
+# Ignore uploaded files and temporary files
+uploads/*
+temp/*
+
+# Keep the folders themselves in the repo
+!uploads/.gitkeep
+!temp/.gitkeep

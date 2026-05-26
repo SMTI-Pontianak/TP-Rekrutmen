@@ -1,0 +1,5 @@
+{
+    "intelephense.diagnostics.undefinedMethods": false,
+    "intelephense.diagnostics.undefinedClassConstants": false,
+    "php.validate.executablePath": "C:/xampp/php/php.exe"
+}

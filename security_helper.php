@@ -12,6 +12,7 @@ if (!is_dir($temp_dir)) {
 
 /**
  * Get client IP address
+ * @return string
  */
 function getClientIP() {
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
@@ -30,7 +31,7 @@ function getClientIP() {
  * @param int $time_window - Time window in minutes
  * @return bool - true if limit exceeded, false if ok
  */
-function checkRateLimit($action, $max_attempts = 5, $time_window = 5) {
+function checkRateLimit(string $action, int $max_attempts = 5, int $time_window = 5): bool {
     $ip = getClientIP();
     $temp_dir = __DIR__ . '/temp';
     $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
@@ -61,8 +62,12 @@ function checkRateLimit($action, $max_attempts = 5, $time_window = 5) {
 
 /**
  * Get remaining attempts before rate limit triggered
+ * @param string $action
+ * @param int $max_attempts
+ * @param int $time_window
+ * @return int
  */
-function getRateLimitRemaining($action, $max_attempts = 5, $time_window = 5) {
+function getRateLimitRemaining(string $action, int $max_attempts = 5, int $time_window = 5): int {
     $ip = getClientIP();
     $temp_dir = __DIR__ . '/temp';
     $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
@@ -84,8 +89,12 @@ function getRateLimitRemaining($action, $max_attempts = 5, $time_window = 5) {
 
 /**
  * Get wait time before next attempt allowed (in seconds)
+ * @param string $action
+ * @param int $max_attempts
+ * @param int $time_window
+ * @return int
  */
-function getRateLimitWaitTime($action, $max_attempts = 5, $time_window = 5) {
+function getRateLimitWaitTime(string $action, int $max_attempts = 5, int $time_window = 5): int {
     $ip = getClientIP();
     $temp_dir = __DIR__ . '/temp';
     $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
@@ -111,8 +120,9 @@ function getRateLimitWaitTime($action, $max_attempts = 5, $time_window = 5) {
 /**
  * Record a failed login attempt for brute force protection
  * @param string $username - Username attempting to login
+ * @return void
  */
-function recordFailedLogin($username) {
+function recordFailedLogin(string $username): void {
     $temp_dir = __DIR__ . '/temp';
     $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
     
@@ -143,7 +153,7 @@ function recordFailedLogin($username) {
  * @param int $lockout_duration - Lockout duration in minutes
  * @return bool - true if account is locked, false if ok
  */
-function isAccountLocked($username, $lockout_threshold = 5, $lockout_duration = 15) {
+function isAccountLocked(string $username, int $lockout_threshold = 5, int $lockout_duration = 15): bool {
     $temp_dir = __DIR__ . '/temp';
     $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
     
@@ -180,8 +190,12 @@ function isAccountLocked($username, $lockout_threshold = 5, $lockout_duration = 
 
 /**
  * Get remaining lockout time in seconds
+ * @param string $username
+ * @param int $lockout_threshold
+ * @param int $lockout_duration
+ * @return int
  */
-function getAccountLockTime($username, $lockout_threshold = 5, $lockout_duration = 15) {
+function getAccountLockTime(string $username, int $lockout_threshold = 5, int $lockout_duration = 15): int {
     $temp_dir = __DIR__ . '/temp';
     $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
     
@@ -209,8 +223,10 @@ function getAccountLockTime($username, $lockout_threshold = 5, $lockout_duration
 
 /**
  * Clear failed login attempts on successful login
+ * @param string $username
+ * @return void
  */
-function clearFailedLogins($username) {
+function clearFailedLogins(string $username): void {
     $temp_dir = __DIR__ . '/temp';
     $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
     
@@ -221,8 +237,10 @@ function clearFailedLogins($username) {
 
 /**
  * Add failed attempt to IP rate limit tracker
+ * @param string $action
+ * @return void
  */
-function recordRateLimitAttempt($action) {
+function recordRateLimitAttempt(string $action): void {
     $ip = getClientIP();
     $temp_dir = __DIR__ . '/temp';
     $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
@@ -243,8 +261,10 @@ function recordRateLimitAttempt($action) {
 
 /**
  * Sanitize user input to prevent XSS attacks
+ * @param string $input
+ * @return string
  */
-function sanitizeInput($input) {
+function sanitizeInput(string $input): string {
     $input = trim($input);
     $input = stripslashes($input);
     $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
@@ -253,8 +273,11 @@ function sanitizeInput($input) {
 
 /**
  * Log security events to file for audit trail
+ * @param string $event_type
+ * @param array $details
+ * @return void
  */
-function logSecurityEvent($event_type, $details = []) {
+function logSecurityEvent(string $event_type, array $details = []): void {
     $temp_dir = __DIR__ . '/temp';
     $log_file = $temp_dir . '/security_log.txt';
     
@@ -269,8 +292,10 @@ function logSecurityEvent($event_type, $details = []) {
 
 /**
  * Format seconds to readable duration
+ * @param int $seconds
+ * @return string
  */
-function formatDuration($seconds) {
+function formatDuration(int $seconds): string {
     if ($seconds < 60) {
         return $seconds . ' detik';
     }
