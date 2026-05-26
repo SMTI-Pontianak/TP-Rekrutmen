@@ -1,0 +1,280 @@
+<?php
+/**
+ * Security Helper Module
+ * Handles rate limiting, account locking, input sanitization, and security logging
+ */
+
+// Ensure temp directory exists
+$temp_dir = __DIR__ . '/temp';
+if (!is_dir($temp_dir)) {
+    mkdir($temp_dir, 0755, true);
+}
+
+/**
+ * Get client IP address
+ */
+function getClientIP() {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+    } else {
+        return $_SERVER['REMOTE_ADDR'];
+    }
+}
+
+/**
+ * Check if request exceeds rate limit
+ * @param string $action - Action type (e.g., 'login', 'register')
+ * @param int $max_attempts - Maximum attempts allowed
+ * @param int $time_window - Time window in minutes
+ * @return bool - true if limit exceeded, false if ok
+ */
+function checkRateLimit($action, $max_attempts = 5, $time_window = 5) {
+    $ip = getClientIP();
+    $temp_dir = __DIR__ . '/temp';
+    $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
+    
+    $current_time = time();
+    $window_start = $current_time - ($time_window * 60);
+    
+    $attempts = [];
+    if (file_exists($rate_limit_file)) {
+        $attempts = json_decode(file_get_contents($rate_limit_file), true);
+    }
+    
+    // Remove old attempts outside the time window
+    $attempts = array_filter($attempts, function($timestamp) use ($window_start) {
+        return $timestamp > $window_start;
+    });
+    
+    // Check if limit exceeded
+    if (count($attempts) >= $max_attempts) {
+        // Update file with current attempts
+        file_put_contents($rate_limit_file, json_encode($attempts));
+        logSecurityEvent('RATE_LIMIT_EXCEEDED', ['action' => $action, 'attempts' => count($attempts)]);
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Get remaining attempts before rate limit triggered
+ */
+function getRateLimitRemaining($action, $max_attempts = 5, $time_window = 5) {
+    $ip = getClientIP();
+    $temp_dir = __DIR__ . '/temp';
+    $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
+    
+    $current_time = time();
+    $window_start = $current_time - ($time_window * 60);
+    
+    $attempts = [];
+    if (file_exists($rate_limit_file)) {
+        $attempts = json_decode(file_get_contents($rate_limit_file), true);
+    }
+    
+    $valid_attempts = array_filter($attempts, function($timestamp) use ($window_start) {
+        return $timestamp > $window_start;
+    });
+    
+    return max(0, $max_attempts - count($valid_attempts));
+}
+
+/**
+ * Get wait time before next attempt allowed (in seconds)
+ */
+function getRateLimitWaitTime($action, $max_attempts = 5, $time_window = 5) {
+    $ip = getClientIP();
+    $temp_dir = __DIR__ . '/temp';
+    $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
+    
+    $current_time = time();
+    $window_start = $current_time - ($time_window * 60);
+    
+    $attempts = [];
+    if (file_exists($rate_limit_file)) {
+        $attempts = json_decode(file_get_contents($rate_limit_file), true);
+    }
+    
+    if (!empty($attempts)) {
+        $oldest_attempt = min($attempts);
+        $wait_until = $oldest_attempt + ($time_window * 60);
+        $wait_time = $wait_until - $current_time;
+        return max(0, $wait_time);
+    }
+    
+    return 0;
+}
+
+/**
+ * Record a failed login attempt for brute force protection
+ * @param string $username - Username attempting to login
+ */
+function recordFailedLogin($username) {
+    $temp_dir = __DIR__ . '/temp';
+    $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
+    
+    $current_time = time();
+    $window_start = $current_time - (30 * 60); // 30-minute window
+    
+    $attempts = [];
+    if (file_exists($failed_login_file)) {
+        $attempts = json_decode(file_get_contents($failed_login_file), true);
+    }
+    
+    // Remove old attempts outside the 30-minute window
+    $attempts = array_filter($attempts, function($timestamp) use ($window_start) {
+        return $timestamp > $window_start;
+    });
+    
+    // Add current attempt
+    $attempts[] = $current_time;
+    
+    // Save updated attempts
+    file_put_contents($failed_login_file, json_encode($attempts));
+}
+
+/**
+ * Check if account is locked due to brute force protection
+ * @param string $username - Username to check
+ * @param int $lockout_threshold - Number of failed attempts before lockout
+ * @param int $lockout_duration - Lockout duration in minutes
+ * @return bool - true if account is locked, false if ok
+ */
+function isAccountLocked($username, $lockout_threshold = 5, $lockout_duration = 15) {
+    $temp_dir = __DIR__ . '/temp';
+    $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
+    
+    if (!file_exists($failed_login_file)) {
+        return false;
+    }
+    
+    $current_time = time();
+    $attempts = json_decode(file_get_contents($failed_login_file), true);
+    
+    // Remove old attempts outside the 30-minute window
+    $window_start = $current_time - (30 * 60);
+    $attempts = array_filter($attempts, function($timestamp) use ($window_start) {
+        return $timestamp > $window_start;
+    });
+    
+    // Check if lockout threshold reached
+    if (count($attempts) >= $lockout_threshold) {
+        // Check if still within lockout period
+        $oldest_attempt = min($attempts);
+        $lockout_end = $oldest_attempt + ($lockout_duration * 60);
+        
+        if ($current_time < $lockout_end) {
+            return true;
+        } else {
+            // Lockout period expired, clear attempts
+            clearFailedLogins($username);
+            return false;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Get remaining lockout time in seconds
+ */
+function getAccountLockTime($username, $lockout_threshold = 5, $lockout_duration = 15) {
+    $temp_dir = __DIR__ . '/temp';
+    $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
+    
+    if (!file_exists($failed_login_file)) {
+        return 0;
+    }
+    
+    $current_time = time();
+    $attempts = json_decode(file_get_contents($failed_login_file), true);
+    
+    $window_start = $current_time - (30 * 60);
+    $attempts = array_filter($attempts, function($timestamp) use ($window_start) {
+        return $timestamp > $window_start;
+    });
+    
+    if (count($attempts) >= $lockout_threshold) {
+        $oldest_attempt = min($attempts);
+        $lockout_end = $oldest_attempt + ($lockout_duration * 60);
+        $remaining = $lockout_end - $current_time;
+        return max(0, $remaining);
+    }
+    
+    return 0;
+}
+
+/**
+ * Clear failed login attempts on successful login
+ */
+function clearFailedLogins($username) {
+    $temp_dir = __DIR__ . '/temp';
+    $failed_login_file = $temp_dir . '/failed_login_' . md5($username) . '.json';
+    
+    if (file_exists($failed_login_file)) {
+        unlink($failed_login_file);
+    }
+}
+
+/**
+ * Add failed attempt to IP rate limit tracker
+ */
+function recordRateLimitAttempt($action) {
+    $ip = getClientIP();
+    $temp_dir = __DIR__ . '/temp';
+    $rate_limit_file = $temp_dir . '/rate_limit_' . md5($ip . $action) . '.json';
+    
+    $current_time = time();
+    
+    $attempts = [];
+    if (file_exists($rate_limit_file)) {
+        $attempts = json_decode(file_get_contents($rate_limit_file), true);
+    }
+    
+    // Add current attempt
+    $attempts[] = $current_time;
+    
+    // Save updated attempts
+    file_put_contents($rate_limit_file, json_encode($attempts));
+}
+
+/**
+ * Sanitize user input to prevent XSS attacks
+ */
+function sanitizeInput($input) {
+    $input = trim($input);
+    $input = stripslashes($input);
+    $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
+    return $input;
+}
+
+/**
+ * Log security events to file for audit trail
+ */
+function logSecurityEvent($event_type, $details = []) {
+    $temp_dir = __DIR__ . '/temp';
+    $log_file = $temp_dir . '/security_log.txt';
+    
+    $timestamp = date('Y-m-d H:i:s');
+    $ip = getClientIP();
+    $details_json = json_encode($details);
+    
+    $log_entry = "[{$timestamp}] IP: {$ip} | Event: {$event_type} | Details: {$details_json}\n";
+    
+    file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * Format seconds to readable duration
+ */
+function formatDuration($seconds) {
+    if ($seconds < 60) {
+        return $seconds . ' detik';
+    }
+    $minutes = floor($seconds / 60);
+    return $minutes . ' menit';
+}
+?>

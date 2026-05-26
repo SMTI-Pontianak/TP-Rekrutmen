@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
         }
         .login-header {
             text-align: center;
@@ -89,12 +89,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-
     <div class="login-card">
         <div class="login-header">
             <i class="fa-solid fa-building"></i>
             <h1 style="font-size: 1.75rem; color: var(--dark);">Pendaftaran Perusahaan</h1>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">Daftar untuk mulai memposting lowongan kerja</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">Bursa Kerja Khusus SMTI Pontianak</p>
         </div>
 
         <?php if(!empty($error)): ?>
@@ -103,54 +102,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <?php if(!empty($success)): ?>
             <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <?php echo $success; ?></div>
-            <div style="text-align: center; margin-top: 24px;">
-                <a href="login.php" class="btn btn-primary" style="width: 100%; justify-content: center;">Ke Halaman Login</a>
-            </div>
-        <?php else: ?>
+        <?php endif; ?>
+
+        <?php if(empty($success)): ?>
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
-                
                 <div class="form-group">
-                    <label class="form-label" for="company_name">Nama Perusahaan / Instansi</label>
-                    <div style="position: relative;">
-                        <i class="fa-solid fa-building" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                        <input type="text" id="company_name" name="company_name" class="form-control" style="padding-left: 48px;" required placeholder="Contoh: PT. Maju Bersama">
-                    </div>
+                    <label class="form-label" for="company_name">Nama Perusahaan</label>
+                    <input type="text" id="company_name" name="company_name" class="form-control" required placeholder="Masukkan nama perusahaan">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="username">Username Login</label>
-                    <div style="position: relative;">
-                        <i class="fa-solid fa-user" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                        <input type="text" id="username" name="username" class="form-control" style="padding-left: 48px;" required placeholder="Pilih username">
-                    </div>
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required placeholder="Masukkan username">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <div style="position: relative;">
-                        <i class="fa-solid fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                        <input type="password" id="password" name="password" class="form-control" style="padding-left: 48px;" required placeholder="Buat password">
-                    </div>
+                    <input type="password" id="password" name="password" class="form-control" required placeholder="Masukkan password">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="confirm_password">Konfirmasi Password</label>
-                    <div style="position: relative;">
-                        <i class="fa-solid fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" style="padding-left: 48px;" required placeholder="Ulangi password">
-                    </div>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" required placeholder="Konfirmasi password">
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1rem; font-size: 1.125rem; margin-top: 8px;">
-                    Daftar Sekarang
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 1rem; margin-top: 16px;">
+                    Daftar
                 </button>
 
                 <div style="text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted);">
                     Sudah punya akun? <a href="login.php" style="font-weight: 600;">Login di sini</a>
                 </div>
             </form>
+        <?php else: ?>
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="login.php" class="btn btn-primary">Kembali ke Login</a>
+            </div>
         <?php endif; ?>
-    </div>
 
+        <div style="text-align: center; margin-top: 24px;">
+            <a href="index.php" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+        </div>
+    </div>
 </body>
 </html>

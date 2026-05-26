@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'security_helper.php';
 
 if (isset($_SESSION['user_id'])) {
     header("Location: siswa_dashboard.php");
@@ -11,33 +12,47 @@ $error = '';
 $success = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $conn->real_escape_string($_POST['username']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    $konsentrasi_keahlian = $_POST['konsentrasi_keahlian'];
-
-    // Validations
-    if (empty($username) || empty($password) || empty($confirm_password) || empty($konsentrasi_keahlian)) {
-        $error = "Semua field harus diisi!";
-    } else if ($password !== $confirm_password) {
-        $error = "Password tidak cocok!";
-    } else if (strlen($password) < 6) {
-        $error = "Password minimal 6 karakter!";
+    // Security Check: IP-based rate limiting (3 registrations per 10 minutes)
+    if (checkRateLimit('register_siswa', 3, 10)) {
+        $wait_time = getRateLimitWaitTime('register_siswa', 3, 10);
+        $error = "Terlalu banyak pendaftaran dari IP ini. Silahkan coba lagi dalam " . formatDuration($wait_time) . ".";
+        logSecurityEvent('RATE_LIMIT_EXCEEDED', ['action' => 'register_siswa']);
     } else {
-        // Check if username exists
-        $check_sql = "SELECT id FROM users WHERE username = '$username'";
-        $check_res = $conn->query($check_sql);
-        if ($check_res->num_rows > 0) {
-            $error = "Username sudah digunakan. Silakan pilih username lain.";
+        $username = $conn->real_escape_string($_POST['username']);
+        $password = $_POST['password'];
+        $confirm_password = $_POST['confirm_password'];
+        $konsentrasi_keahlian = $_POST['konsentrasi_keahlian'];
+
+        // Validations
+        if (empty($username) || empty($password) || empty($confirm_password) || empty($konsentrasi_keahlian)) {
+            $error = "Semua field harus diisi!";
+            recordRateLimitAttempt('register_siswa');
+        } else if ($password !== $confirm_password) {
+            $error = "Password tidak cocok!";
+            recordRateLimitAttempt('register_siswa');
+        } else if (strlen($password) < 6) {
+            $error = "Password minimal 6 karakter!";
+            recordRateLimitAttempt('register_siswa');
         } else {
-            // Insert
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $insert_sql = "INSERT INTO users (username, password, role, konsentrasi_keahlian) VALUES ('$username', '$hashed_password', 'siswa', '$konsentrasi_keahlian')";
-            
-            if ($conn->query($insert_sql) === TRUE) {
-                $success = "Pendaftaran berhasil! Anda sekarang bisa login.";
+            // Check if username exists
+            $check_sql = "SELECT id FROM users WHERE username = '$username'";
+            $check_res = $conn->query($check_sql);
+            if ($check_res->num_rows > 0) {
+                $error = "Username sudah digunakan. Silakan pilih username lain.";
+                recordRateLimitAttempt('register_siswa');
             } else {
-                $error = "Terjadi kesalahan: " . $conn->error;
+                // Insert
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $insert_sql = "INSERT INTO users (username, password, role, konsentrasi_keahlian) VALUES ('$username', '$hashed_password', 'siswa', '$konsentrasi_keahlian')";
+                
+                if ($conn->query($insert_sql) === TRUE) {
+                    $success = "Pendaftaran berhasil! Anda sekarang bisa login.";
+                    recordRateLimitAttempt('register_siswa');
+                    logSecurityEvent('SISWA_REGISTERED', ['username' => $username]);
+                } else {
+                    $error = "Terjadi kesalahan: " . $conn->error;
+                    recordRateLimitAttempt('register_siswa');
+                }
             }
         }
     }

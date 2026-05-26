@@ -1,0 +1,2 @@
+[2026-05-26 03:24:33] IP: ::1 | Event: SUCCESSFUL_LOGIN | Details: {"username":"indosuryautama","role":"recruiter"}
+[2026-05-26 05:01:17] IP: ::1 | Event: FAILED_LOGIN | Details: {"username":"indosuryautama","reason":"wrong_password"}

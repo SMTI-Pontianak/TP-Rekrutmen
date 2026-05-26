@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'security_helper.php';
 
 if (isset($_SESSION['user_id'])) {
     header("Location: admin_dashboard.php");
@@ -15,33 +16,59 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     $selected_role = $_POST['role'];
 
-    $sql = "SELECT id, username, password, role, company_name FROM users WHERE username = '$username'";
-    $result = $conn->query($sql);
-
-    if ($result->num_rows == 1) {
-        $row = $result->fetch_assoc();
-        
-        // Check if selected role matches user's actual role
-        if ($row['role'] !== $selected_role) {
-            $error = "Role tidak sesuai dengan akun ini!";
-        } else if (password_verify($password, $row['password'])) {
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['username'] = $row['username'];
-            $_SESSION['role'] = $row['role'];
-            $_SESSION['company_name'] = $row['company_name'];
-            
-            // Redirect based on role
-            if ($row['role'] === 'siswa') {
-                header("Location: siswa_dashboard.php");
-            } else {
-                header("Location: admin_dashboard.php");
-            }
-            exit;
-        } else {
-            $error = "Password salah!";
-        }
+    // Security Check 1: IP-based rate limiting (5 attempts per 5 minutes)
+    if (checkRateLimit('login', 5, 5)) {
+        $wait_time = getRateLimitWaitTime('login', 5, 5);
+        $error = "Terlalu banyak percobaan login. Silahkan coba lagi dalam " . formatDuration($wait_time) . ".";
+        logSecurityEvent('RATE_LIMIT_EXCEEDED', ['action' => 'login', 'username' => $username]);
+    } 
+    // Security Check 2: Account lockout (5 failed attempts = 15 minute lockout)
+    else if (isAccountLocked($username, 5, 15)) {
+        $lock_time = getAccountLockTime($username, 5, 15);
+        $error = "Akun Anda terkunci karena terlalu banyak percobaan gagal. Silahkan coba lagi dalam " . formatDuration($lock_time) . ".";
+        logSecurityEvent('ACCOUNT_LOCKED', ['username' => $username]);
     } else {
-        $error = "Username tidak ditemukan!";
+        $sql = "SELECT id, username, password, role, company_name FROM users WHERE username = '$username'";
+        $result = $conn->query($sql);
+
+        if ($result->num_rows == 1) {
+            $row = $result->fetch_assoc();
+            
+            // Check if selected role matches user's actual role
+            if ($row['role'] !== $selected_role) {
+                $error = "Role tidak sesuai dengan akun ini!";
+                recordFailedLogin($username);
+                recordRateLimitAttempt('login');
+                logSecurityEvent('FAILED_LOGIN', ['username' => $username, 'reason' => 'role_mismatch']);
+            } else if (password_verify($password, $row['password'])) {
+                // Successful login
+                $_SESSION['user_id'] = $row['id'];
+                $_SESSION['username'] = $row['username'];
+                $_SESSION['role'] = $row['role'];
+                $_SESSION['company_name'] = $row['company_name'];
+                
+                // Clear failed login attempts on successful login
+                clearFailedLogins($username);
+                logSecurityEvent('SUCCESSFUL_LOGIN', ['username' => $username, 'role' => $row['role']]);
+                
+                // Redirect based on role
+                if ($row['role'] === 'siswa') {
+                    header("Location: siswa_dashboard.php");
+                } else {
+                    header("Location: admin_dashboard.php");
+                }
+                exit;
+            } else {
+                $error = "Password salah!";
+                recordFailedLogin($username);
+                recordRateLimitAttempt('login');
+                logSecurityEvent('FAILED_LOGIN', ['username' => $username, 'reason' => 'wrong_password']);
+            }
+        } else {
+            $error = "Username tidak ditemukan!";
+            recordRateLimitAttempt('login');
+            logSecurityEvent('FAILED_LOGIN', ['username' => $username, 'reason' => 'username_not_found']);
+        }
     }
 }
 ?>
