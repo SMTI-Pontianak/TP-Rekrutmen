@@ -25,6 +25,40 @@ $apps_sql = "SELECT a.*, j.title, j.company_name
              ORDER BY a.applied_at DESC";
 $apps_result = $conn->query($apps_sql);
 
+// Fetch accepted application for logbook
+$accepted_app_sql = "SELECT a.id, j.title, j.company_name
+                     FROM applications a
+                     JOIN jobs j ON a.job_id = j.id
+                     WHERE a.siswa_id = {$_SESSION['user_id']} AND a.status = 'accepted'
+                     ORDER BY a.applied_at DESC LIMIT 1";
+$accepted_app_result = $conn->query($accepted_app_sql);
+$accepted_app = ($accepted_app_result && $accepted_app_result->num_rows > 0)
+                ? $accepted_app_result->fetch_assoc()
+                : null;
+
+// If accepted, get today's logbook session status
+$logbook_active = null;
+$today_sessions_count = 0;
+if ($accepted_app) {
+    $today = date('Y-m-d');
+    $sid   = (int)$_SESSION['user_id'];
+    $aid   = (int)$accepted_app['id'];
+    $lb_active_sql = "SELECT id, check_in FROM logbook_sessions
+                      WHERE siswa_id = $sid AND application_id = $aid
+                        AND check_out IS NULL LIMIT 1";
+    $lb_active_res = $conn->query($lb_active_sql);
+    if ($lb_active_res && $lb_active_res->num_rows > 0) {
+        $logbook_active = $lb_active_res->fetch_assoc();
+    }
+    $lb_count_sql = "SELECT COUNT(*) as c FROM logbook_sessions
+                     WHERE siswa_id = $sid AND application_id = $aid
+                       AND DATE(check_in) = '$today' AND check_out IS NOT NULL";
+    $lb_count_res = $conn->query($lb_count_sql);
+    if ($lb_count_res) {
+        $today_sessions_count = (int)($lb_count_res->fetch_assoc()['c']);
+    }
+}
+
 // Count active applications
 $count_active_sql = "SELECT COUNT(*) as count FROM applications WHERE siswa_id = {$_SESSION['user_id']} AND status IN ('pending', 'reviewed', 'accepted')";
 $count_active_result = $conn->query($count_active_sql);
@@ -140,6 +174,52 @@ $count_active = $count_active_result->fetch_assoc()['count'];
             padding: 2rem;
             color: var(--text-muted);
         }
+        /* Logbook card */
+        .logbook-banner {
+            background: linear-gradient(135deg, #10B981, #059669);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .logbook-banner::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .logbook-status-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .logbook-status-dot.active { background: #86EFAC; box-shadow: 0 0 0 3px rgba(134,239,172,0.4); animation: pulse 1.5s infinite; }
+        .logbook-status-dot.idle   { background: rgba(255,255,255,0.5); }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(134,239,172,0.4);} 50%{box-shadow:0 0 0 6px rgba(134,239,172,0.15);} }
+        .btn-logbook {
+            background: white;
+            color: #059669;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-full);
+            display: inline-flex; align-items: center; gap: 8px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .btn-logbook:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            color: #047857;
+        }
     </style>
 </head>
 <body>
@@ -171,6 +251,36 @@ $count_active = $count_active_result->fetch_assoc()['count'];
             <p style="font-size: 1.1rem;">Konsentrasi: <strong><?php echo htmlspecialchars($siswa_konsentrasi); ?></strong></p>
             <p style="font-size: 0.95rem; margin-top: 0.5rem;">Cari dan lamar lowongan kerja dari perusahaan terkemuka yang sesuai dengan konsentrasi Anda</p>
         </div>
+
+        <?php if ($accepted_app): ?>
+        <!-- ── Logbook Banner (only for accepted students) ── -->
+        <div class="logbook-banner">
+            <div>
+                <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.1em; opacity:0.8; margin-bottom:6px;">
+                    <i class="fa-solid fa-building"></i>
+                    <?php echo htmlspecialchars($accepted_app['company_name']); ?> &middot;
+                    <?php echo htmlspecialchars($accepted_app['title']); ?>
+                </div>
+                <h2 style="font-size:1.4rem; margin-bottom:6px;"><i class="fa-solid fa-book-open"></i> Logbook Harian</h2>
+                <div style="font-size:0.9rem; opacity:0.9;">
+                    <?php if ($logbook_active): ?>
+                        <span class="logbook-status-dot active"></span>
+                        Sesi aktif sejak <?php echo date('H:i', strtotime($logbook_active['check_in'])); ?> – jangan lupa Check Out!
+                    <?php elseif ($today_sessions_count > 0): ?>
+                        <span class="logbook-status-dot idle"></span>
+                        <?php echo $today_sessions_count; ?> sesi selesai hari ini
+                    <?php else: ?>
+                        <span class="logbook-status-dot idle"></span>
+                        Belum ada sesi hari ini. Yuk mulai check-in!
+                    <?php endif; ?>
+                </div>
+            </div>
+            <a href="logbook.php" class="btn-logbook">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <?php if ($logbook_active): ?>Lanjutkan Logbook<?php else: ?>Buka Logbook<?php endif; ?>
+            </a>
+        </div>
+        <?php endif; ?>
 
         <div class="dashboard-container">
             

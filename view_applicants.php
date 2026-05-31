@@ -305,6 +305,14 @@ function getStatusBadge($status) {
                                                 <button type="button" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #3B82F6;" onclick="openStatusModal(<?php echo $row['id']; ?>, '<?php echo $row['status']; ?>', '<?php echo htmlspecialchars($row['nama_lengkap']); ?>')">
                                                     <i class="fa-solid fa-edit"></i>
                                                 </button>
+                                                <?php if ($_SESSION['role'] === 'teacher' && $row['status'] === 'accepted'): ?>
+                                                <a href="admin_logbook.php?application_id=<?php echo (int)$row['id']; ?>"
+                                                   class="btn btn-primary"
+                                                   style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #10B981;"
+                                                   title="Lihat Logbook">
+                                                    <i class="fa-solid fa-book-open"></i>
+                                                </a>
+                                                <?php endif; ?>
                                                 <form action="view_applicants.php?job_id=<?php echo $job_id; ?>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pelamar ini? CV dan datanya akan dihapus permanen.');" style="margin: 0;">
                                                     <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
                                                     <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; cursor: pointer; background: #EF4444; color: white;" title="Hapus Pelamar">
