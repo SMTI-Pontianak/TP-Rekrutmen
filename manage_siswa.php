@@ -201,7 +201,12 @@ $users_result = $conn->query($users_sql);
             <?php endif; ?>
 
             <!-- Siswa Table -->
-            <div class="table-responsive">
+            <div class="table-container">
+                <div style="padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="font-size: 1.25rem;">Daftar Akun Siswa</h2>
+                    <a href="siswa_register.php" target="_blank" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;"><i class="fa-solid fa-plus"></i> Tambah Siswa</a>
+                </div>
+                <div class="table-responsive">
                 <table class="applications-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: var(--bg-main);">
@@ -249,6 +254,7 @@ $users_result = $conn->query($users_sql);
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
         </main>
     </div>

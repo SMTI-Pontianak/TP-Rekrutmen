@@ -206,9 +206,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <!-- This will be updated by JavaScript based on role -->
                 </div>
 
-                <div style="text-align: center; margin-top: 16px;">
-                    <a href="#" onclick="backToRoleSelection(); return false;" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-left"></i> Ganti Role</a>
-                </div>
+
             </div>
         </form>
     </div>
