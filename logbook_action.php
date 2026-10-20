@@ -16,7 +16,7 @@ $action   = $_POST['action'] ?? '';
 // -----------------------------------------------------------------
 // Helper: find the siswa's accepted application
 // -----------------------------------------------------------------
-function getAcceptedApplication($conn, $siswa_id) {
+function getAcceptedApplication(mysqli $conn, int $siswa_id) {
     $sql = "SELECT a.id, a.job_id, j.company_name, j.title
             FROM applications a
             JOIN jobs j ON a.job_id = j.id
